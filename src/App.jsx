@@ -1,6 +1,10 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import LoginPage from "./pages/LoginPage";
+import DashboardLayout from "./pages/DashboardLayout";
 import DashboardPage from "./pages/DashboardPage";
+import CaptainManagementPage from "./pages/CaptainManagementPage";
+import CouponPage from "./pages/CouponPage";
+import ReferralPage from "./pages/ReferralPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 function App() {
@@ -8,15 +12,19 @@ function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<LoginPage />} />
-
         <Route
           path="/dashboard"
           element={
             <ProtectedRoute>
-              <DashboardPage />
+              <DashboardLayout />
             </ProtectedRoute>
           }
-        />
+        >
+          <Route index element={<DashboardPage />} />
+          <Route path="captains" element={<CaptainManagementPage />} />
+          <Route path="coupons" element={<CouponPage />} />
+          <Route path="referrals" element={<ReferralPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );

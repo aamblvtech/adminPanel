@@ -1,0 +1,84 @@
+import { NavLink, Outlet, useNavigate } from "react-router-dom";
+
+const navItems = [
+  { label: "Dashboard", path: "/dashboard" },
+  { label: "Manage Captains", path: "/dashboard/captains" },
+  { label: "Coupons", path: "/dashboard/coupons" },
+  { label: "Referral", path: "/dashboard/referrals" },
+];
+
+function DashboardLayout() {
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    localStorage.removeItem("adminLoggedIn");
+    navigate("/");
+  };
+
+  return (
+    <div className="min-h-screen bg-slate-100">
+      <div className="flex min-h-screen">
+        <aside className="hidden w-80 flex-col bg-slate-950 px-6 py-8 text-white md:flex">
+          <div className="mb-10">
+            <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Admin Panel</p>
+            <h1 className="mt-3 text-3xl font-semibold">Ride App</h1>
+            <p className="mt-2 text-sm text-slate-400">Analytics, captain onboarding, coupons, referrals.</p>
+          </div>
+
+          <nav className="space-y-2 flex-1">
+            {navItems.map((item) => (
+              <NavLink
+                key={item.path}
+                to={item.path}
+                end={item.path === "/dashboard"}
+                className={({ isActive }) =>
+                  `block rounded-3xl px-4 py-3 text-sm font-medium transition ${
+                    isActive
+                      ? "bg-white text-slate-950 shadow-lg"
+                      : "text-slate-300 hover:bg-white/10 hover:text-white"
+                  }`
+                }
+              >
+                {item.label}
+              </NavLink>
+            ))}
+          </nav>
+
+          <div className="mt-6 border-t border-slate-800 pt-6">
+            <button
+              onClick={handleLogout}
+              className="inline-flex w-full items-center justify-center rounded-3xl bg-red-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-red-500"
+            >
+              Log out
+            </button>
+          </div>
+        </aside>
+
+        <main className="flex-1 p-6 md:p-10">
+          <Outlet />
+        </main>
+      </div>
+
+      <div className="md:hidden fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white px-4 py-3">
+        <div className="flex items-center justify-between gap-2">
+          {navItems.map((item) => (
+            <NavLink
+              key={item.path}
+              to={item.path}
+              end={item.path === "/dashboard"}
+              className={({ isActive }) =>
+                `flex-1 rounded-3xl px-3 py-2 text-center text-xs font-semibold transition ${
+                  isActive ? "bg-slate-950 text-white" : "text-slate-500 hover:bg-slate-100"
+                }`
+              }
+            >
+              {item.label}
+            </NavLink>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default DashboardLayout;
