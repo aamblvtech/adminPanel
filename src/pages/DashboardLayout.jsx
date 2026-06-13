@@ -5,6 +5,7 @@ const navItems = [
   { label: "Manage Captains", path: "/dashboard/captains" },
   { label: "Coupons", path: "/dashboard/coupons" },
   { label: "Referral", path: "/dashboard/referrals" },
+  { label: "Recharges", path: "/dashboard/recharges" },
 ];
 
 function DashboardLayout() {
