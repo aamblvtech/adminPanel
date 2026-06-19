@@ -12,6 +12,8 @@ function CouponPage() {
     expiresAt: "",
     usageLimit: "",
     description: "",
+    perUserLimit: "1",
+    maxUniqueUsers: "",
   });
 
   const loadCoupons = async () => {
@@ -51,6 +53,8 @@ function CouponPage() {
         expires_at: form.expiresAt || null,
         usage_limit: form.usageLimit ? parseInt(form.usageLimit, 10) : null,
         description: form.description.trim() || null,
+        per_user_limit: form.perUserLimit ? parseInt(form.perUserLimit, 10) : 1,
+        max_unique_users: form.maxUniqueUsers ? parseInt(form.maxUniqueUsers, 10) : null,
       });
 
       setForm({
@@ -61,6 +65,8 @@ function CouponPage() {
         expiresAt: "",
         usageLimit: "",
         description: "",
+        perUserLimit: "1",
+        maxUniqueUsers: "",
       });
       loadCoupons();
       alert("Coupon created successfully.");
@@ -165,6 +171,31 @@ function CouponPage() {
               </div>
             </div>
 
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-sm font-medium text-slate-700">Per-user limit</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={form.perUserLimit}
+                  onChange={(e) => handleChange("perUserLimit", e.target.value)}
+                  placeholder="1"
+                  className="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-900"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">Max Users Limit</label>
+                <input
+                  type="number"
+                  min="1"
+                  value={form.maxUniqueUsers}
+                  onChange={(e) => handleChange("maxUniqueUsers", e.target.value)}
+                  placeholder="Leave empty for unlimited"
+                  className="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-900"
+                />
+              </div>
+            </div>
+
             <button
               className="inline-flex rounded-3xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
             >
@@ -216,7 +247,9 @@ function CouponPage() {
                 <div className="mt-3 grid gap-2 sm:grid-cols-3 text-sm text-slate-600">
                   <p>Start: {coupon.starts_at ? new Date(coupon.starts_at).toLocaleString() : "Immediate"}</p>
                   <p>Expiry: {coupon.expires_at ? new Date(coupon.expires_at).toLocaleString() : "None"}</p>
-                  <p>Limit: {coupon.usage_limit ?? "Unlimited"}</p>
+                  <p>Usage Limit: {coupon.usage_limit ?? "Unlimited"} (Used: {coupon.used_count})</p>
+                  <p>Per-User Limit: {coupon.per_user_limit ?? 1}</p>
+                  <p>Max Users Limit: {coupon.max_unique_users ?? "Unlimited"} (Used: {coupon.unique_users_count})</p>
                 </div>
               </div>
             ))}

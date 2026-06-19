@@ -443,7 +443,7 @@ function ReferralPage() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-slate-700">Max Usage Limit</label>
+                  <label className="text-sm font-medium text-slate-700">Max Users Limit</label>
                   <input
                     type="number"
                     min="1"
@@ -596,7 +596,7 @@ function ReferralPage() {
                         </div>
                         <div className="space-y-1 sm:border-l sm:border-slate-200/60 sm:pl-4">
                           <p>
-                            <span className="font-semibold text-slate-700">Usage Limit:</span> {c.used_count} /{" "}
+                            <span className="font-semibold text-slate-700">Max Users Limit:</span> {c.claim_count || 0} /{" "}
                             {c.usage_limit ?? "∞"}
                           </p>
                           <p>
