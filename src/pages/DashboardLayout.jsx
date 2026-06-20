@@ -6,6 +6,7 @@ const navItems = [
   { label: "Coupons", path: "/dashboard/coupons" },
   { label: "Referral", path: "/dashboard/referrals" },
   { label: "Recharges", path: "/dashboard/recharges" },
+  { label: "Payouts & Platform Fee", path: "/dashboard/payouts" },
 ];
 
 function DashboardLayout() {
