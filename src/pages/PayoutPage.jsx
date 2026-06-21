@@ -229,7 +229,9 @@ function PayoutPage() {
                       <tr key={cap.captain_id} className="hover:bg-slate-50/50 transition-colors">
                         <td className="py-4">
                           <div className="font-semibold text-slate-950">{cap.captain_name || "Unknown Captain"}</div>
-                          <div className="text-xs text-slate-400 mt-0.5">{cap.captain_phone}</div>
+                          <div className="text-xs text-slate-400 mt-0.5">
+                            {cap.captain_phone} {cap.captain_vehicle_number && `(${cap.captain_vehicle_type} - ${cap.captain_vehicle_number})`}
+                          </div>
                         </td>
                         <td className="py-4 text-slate-600 font-medium">
                           {cap.pending_count} ride{cap.pending_count > 1 ? "s" : ""}
@@ -319,8 +321,10 @@ function PayoutPage() {
                         return (
                           <tr key={p.id} className="hover:bg-slate-50/50 transition-colors">
                             <td className="py-4">
-                              <div className="font-semibold text-slate-950">{p.captain_name || "Unknown Captain"}</div>
-                              <div className="text-xs text-slate-400 mt-0.5">{p.captain_phone}</div>
+                             <div className="font-semibold text-slate-950">{p.captain_name || "Unknown Captain"}</div>
+                              <div className="text-xs text-slate-400 mt-0.5">
+                                {p.captain_phone} {p.captain_vehicle_number && `(${p.captain_vehicle_type} - ${p.captain_vehicle_number})`}
+                              </div>
                             </td>
                             <td className="py-4 text-xs max-w-[220px] truncate">
                               <div className="text-slate-500 font-semibold mb-0.5">Ride: {p.ride_id.slice(0, 8)}...</div>

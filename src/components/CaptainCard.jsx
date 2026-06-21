@@ -49,7 +49,7 @@ function CaptainCard({ captain, refreshCaptains }) {
           </h2>
 
           <p className="mt-1 text-sm text-slate-500">
-            {captain.vehicle_type}
+            {captain.vehicle_type} {captain.vehicle_number && `(${captain.vehicle_number})`} {captain.phone && `• ${captain.phone}`}
           </p>
         </div>
 

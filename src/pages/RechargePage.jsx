@@ -138,7 +138,7 @@ function RechargePage() {
                 <option value="">-- Choose a Captain --</option>
                 {captains.map((cap) => (
                   <option key={cap.id} value={cap.user_id}>
-                    {cap.full_name} ({cap.vehicle_type})
+                    {cap.full_name} ({cap.vehicle_type} - {cap.vehicle_number} | {cap.phone || "No Phone"})
                   </option>
                 ))}
               </select>
@@ -197,7 +197,7 @@ function RechargePage() {
               <option value="">All Captains</option>
               {captains.map((cap) => (
                 <option key={cap.id} value={cap.user_id}>
-                  {cap.full_name}
+                  {cap.full_name} ({cap.vehicle_type} - {cap.vehicle_number} | {cap.phone || "No Phone"})
                 </option>
               ))}
             </select>
@@ -235,7 +235,7 @@ function RechargePage() {
                           {rec.captain_name || "Unknown Captain"}
                         </div>
                         <div className="text-xs text-slate-400 mt-0.5">
-                          {rec.captain_phone}
+                          {rec.captain_phone} {rec.captain_vehicle_number && `(${rec.captain_vehicle_type} - ${rec.captain_vehicle_number})`}
                         </div>
                       </td>
                       <td className="py-4">
