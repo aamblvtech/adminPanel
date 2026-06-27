@@ -7,6 +7,7 @@ import CouponPage from "./pages/CouponPage";
 import ReferralPage from "./pages/ReferralPage";
 import RechargePage from "./pages/RechargePage";
 import PayoutPage from "./pages/PayoutPage";
+import WithdrawalPage from "./pages/WithdrawalPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 function App() {
@@ -28,6 +29,7 @@ function App() {
           <Route path="referrals" element={<ReferralPage />} />
           <Route path="recharges" element={<RechargePage />} />
           <Route path="payouts" element={<PayoutPage />} />
+          <Route path="withdrawals" element={<WithdrawalPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

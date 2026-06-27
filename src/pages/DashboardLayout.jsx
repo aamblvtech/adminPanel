@@ -7,6 +7,7 @@ const navItems = [
   { label: "Referral", path: "/dashboard/referrals" },
   { label: "Recharges", path: "/dashboard/recharges" },
   { label: "Payouts & Platform Fee", path: "/dashboard/payouts" },
+  { label: "Withdrawals", path: "/dashboard/withdrawals" },
 ];
 
 function DashboardLayout() {
