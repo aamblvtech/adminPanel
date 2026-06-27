@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import api from "../services/api";
 
 function LoginPage() {
   const navigate = useNavigate();
@@ -7,20 +8,21 @@ function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
-  const login = (e) => {
+  const login = async (e) => {
     e.preventDefault();
 
-    const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
-    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
-
-    if (
-      email === adminEmail &&
-      password === adminPassword
-    ) {
-      localStorage.setItem("adminLoggedIn", "true");
-      navigate("/dashboard");
-    } else {
-      alert("Invalid Credentials");
+    try {
+      const response = await api.post("/auth/admin-login", { email, password });
+      if (response.data.success) {
+        localStorage.setItem("adminLoggedIn", "true");
+        localStorage.setItem("adminToken", response.data.token);
+        navigate("/dashboard");
+      } else {
+        alert(response.data.message || "Invalid Credentials");
+      }
+    } catch (err) {
+      console.error("[Login Error]", err);
+      alert(err.response?.data?.message || "Invalid Credentials");
     }
   };
 
