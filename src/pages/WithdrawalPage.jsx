@@ -5,6 +5,7 @@ function WithdrawalPage() {
   const [withdrawals, setWithdrawals] = useState([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState(""); // empty string means "all"
+  const [searchQuery, setSearchQuery] = useState("");
   const [processingId, setProcessingId] = useState(null);
   const [gatewayRefInput, setGatewayRefInput] = useState("");
   const [errorMsgInput, setErrorMsgInput] = useState("");
@@ -71,6 +72,26 @@ function WithdrawalPage() {
     }
   };
 
+  const filteredWithdrawals = withdrawals.filter((item) => {
+    if (!searchQuery) return true;
+    const query = searchQuery.toLowerCase().trim();
+    const captainName = (item.captain_name || "").toLowerCase();
+    const captainPhone = (item.captain_phone || "").toLowerCase();
+    const vehicleNum = (item.captain_vehicle_number || "").toLowerCase();
+    const refId = (item.gateway_reference || "").toLowerCase();
+    const refundId = (item.refund_transaction_id || "").toLowerCase();
+    const transferMethod = (item.transfer_method || "").toLowerCase();
+
+    return (
+      captainName.includes(query) ||
+      captainPhone.includes(query) ||
+      vehicleNum.includes(query) ||
+      refId.includes(query) ||
+      refundId.includes(query) ||
+      transferMethod.includes(query)
+    );
+  });
+
   return (
     <div className="flex-1">
       <div className="flex flex-col justify-between gap-4 border-b border-slate-200 pb-5 sm:flex-row sm:items-center">
@@ -82,36 +103,74 @@ function WithdrawalPage() {
           </p>
         </div>
 
-        <div className="flex items-center gap-2">
-          <label htmlFor="status-filter" className="text-sm font-semibold text-slate-700">
-            Filter Status:
-          </label>
-          <select
-            id="status-filter"
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="rounded-3xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm outline-none focus:border-slate-950 focus:ring-1 focus:ring-slate-950"
-          >
-            <option value="">All</option>
-            <option value="pending">Pending</option>
-            <option value="processing">Processing</option>
-            <option value="completed">Completed</option>
-            <option value="failed">Failed</option>
-            <option value="rejected">Rejected</option>
-          </select>
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Search Input */}
+          <div className="relative flex items-center">
+            <svg
+              className="absolute left-3.5 w-4 h-4 text-slate-400 pointer-events-none"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2.5"
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+            <input
+              type="text"
+              placeholder="Search name, phone, vehicle..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-64 rounded-3xl border border-slate-200 bg-white pl-10 pr-9 py-2 text-sm text-slate-900 shadow-sm outline-none focus:border-slate-950 focus:ring-1 focus:ring-slate-950"
+            />
+            {searchQuery && (
+              <button
+                onClick={() => setSearchQuery("")}
+                className="absolute right-3 p-0.5 rounded-full hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition"
+              >
+                <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </div>
+
+          <div className="flex items-center gap-2">
+            <label htmlFor="status-filter" className="text-sm font-semibold text-slate-700 shrink-0">
+              Filter Status:
+            </label>
+            <select
+              id="status-filter"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="rounded-3xl border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm outline-none focus:border-slate-950 focus:ring-1 focus:ring-slate-950"
+            >
+              <option value="">All</option>
+              <option value="pending">Pending</option>
+              <option value="processing">Processing</option>
+              <option value="completed">Completed</option>
+              <option value="failed">Failed</option>
+              <option value="rejected">Rejected</option>
+            </select>
+          </div>
         </div>
       </div>
 
       <div className="mt-8">
         {loading ? (
           <div className="py-12 text-center text-slate-500">Loading withdrawal requests...</div>
-        ) : withdrawals.length === 0 ? (
+        ) : filteredWithdrawals.length === 0 ? (
           <div className="rounded-3xl border border-dashed border-slate-200 bg-white py-16 text-center">
-            <p className="text-sm font-medium text-slate-500">No withdrawal requests found.</p>
+            <p className="text-sm font-medium text-slate-500">
+              {searchQuery ? `No matching requests found for "${searchQuery}"` : "No withdrawal requests found."}
+            </p>
           </div>
         ) : (
           <div className="grid gap-6 sm:grid-cols-1 lg:grid-cols-2">
-            {withdrawals.map((item) => {
+            {filteredWithdrawals.map((item) => {
               const formattedDate = new Date(item.created_at).toLocaleString([], {
                 day: "numeric",
                 month: "short",

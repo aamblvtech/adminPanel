@@ -443,7 +443,7 @@ function ReferralPage() {
                 </div>
 
                 <div>
-                  <label className="text-sm font-medium text-slate-700">Max Users Limit</label>
+                  <label className="text-sm font-medium text-slate-700">Total Usage Limit (Global)</label>
                   <input
                     type="number"
                     min="1"
@@ -454,6 +454,9 @@ function ReferralPage() {
                     }
                     className="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-900"
                   />
+                  <p className="mt-1 px-1 text-xs text-slate-400">
+                    The maximum number of times this campaign code can be claimed globally by all users combined.
+                  </p>
                 </div>
               </div>
 

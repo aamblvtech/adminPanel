@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
+import SearchableSelect from "../components/SearchableSelect";
 
 function RechargePage() {
   const [recharges, setRecharges] = useState([]);
@@ -12,6 +13,13 @@ function RechargePage() {
     captainId: "",
     planType: "daily",
   });
+
+  const captainOptions = captains.map((cap) => ({
+    value: cap.user_id,
+    label: cap.full_name,
+    sublabel: `${cap.vehicle_type} - ${cap.vehicle_number} | ${cap.phone || "No Phone"}`,
+    searchTerms: `${cap.full_name} ${cap.phone || ""} ${cap.vehicle_number} ${cap.vehicle_type}`.toLowerCase(),
+  }));
 
   const loadRecharges = async (captainId = "") => {
     try {
@@ -129,19 +137,16 @@ function RechargePage() {
           <form onSubmit={handleGrantRecharge} className="mt-6 space-y-5">
             <div>
               <label className="text-sm font-medium text-slate-700">Select Captain</label>
-              <select
-                value={form.captainId}
-                onChange={(e) => handleChange("captainId", e.target.value)}
-                disabled={captainsLoading}
-                className="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-900 disabled:opacity-50"
-              >
-                <option value="">-- Choose a Captain --</option>
-                {captains.map((cap) => (
-                  <option key={cap.id} value={cap.user_id}>
-                    {cap.full_name} ({cap.vehicle_type} - {cap.vehicle_number} | {cap.phone || "No Phone"})
-                  </option>
-                ))}
-              </select>
+              <div className="mt-2">
+                <SearchableSelect
+                  options={captainOptions}
+                  value={form.captainId}
+                  onChange={(val) => handleChange("captainId", val)}
+                  disabled={captainsLoading}
+                  placeholder="-- Choose a Captain --"
+                  searchPlaceholder="Search by name, phone, vehicle..."
+                />
+              </div>
             </div>
 
             <div>
@@ -187,20 +192,19 @@ function RechargePage() {
           </div>
           
           {/* Captain filter */}
-          <div className="flex items-center gap-2">
-            <label className="text-sm text-slate-600">Filter Captain:</label>
-            <select
-              value={filterCaptainId}
-              onChange={(e) => handleFilterChange(e.target.value)}
-              className="rounded-3xl border border-slate-300 bg-slate-50 px-4 py-2 text-sm text-slate-900 outline-none focus:border-slate-900"
-            >
-              <option value="">All Captains</option>
-              {captains.map((cap) => (
-                <option key={cap.id} value={cap.user_id}>
-                  {cap.full_name} ({cap.vehicle_type} - {cap.vehicle_number} | {cap.phone || "No Phone"})
-                </option>
-              ))}
-            </select>
+          <div className="flex items-center gap-2 min-w-[280px]">
+            <label className="text-sm text-slate-600 shrink-0">Filter Captain:</label>
+            <div className="flex-1">
+              <SearchableSelect
+                options={captainOptions}
+                value={filterCaptainId}
+                onChange={handleFilterChange}
+                placeholder="All Captains"
+                searchPlaceholder="Search by name, phone, vehicle..."
+                hasClearButton={true}
+                className="py-1.5"
+              />
+            </div>
           </div>
         </div>
 
