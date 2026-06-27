@@ -376,9 +376,8 @@ function CouponPage() {
                 <div className="mt-3 grid gap-2 sm:grid-cols-3 text-sm text-slate-600">
                   <p>Start: {coupon.starts_at ? new Date(coupon.starts_at).toLocaleString() : "Immediate"}</p>
                   <p>Expiry: {coupon.expires_at ? new Date(coupon.expires_at).toLocaleString() : "None"}</p>
-                  <p>Usage Limit: {coupon.usage_limit ?? "Unlimited"} (Used: {coupon.used_count})</p>
                   <p>Per-User Limit: {coupon.per_user_limit ?? 1}</p>
-                  <p>Max Users Limit: {coupon.max_unique_users ?? "Unlimited"} (Used: {coupon.unique_users_count})</p>
+                  <p>Max Unique Users: {coupon.max_unique_users ?? "Unlimited"} (Used: {coupon.unique_users_count})</p>
                 </div>
               </div>
             ))}
