@@ -18,7 +18,11 @@ function DashboardPage() {
   };
 
   useEffect(() => {
-    loadAnalytics();
+    const timer = window.setTimeout(() => {
+      loadAnalytics();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   if (loading || !analytics) {
@@ -32,6 +36,7 @@ function DashboardPage() {
   const stats = [
     { label: "Pending captains", value: analytics.pending_captains },
     { label: "Approved captains", value: analytics.approved_captains },
+    { label: "Needs correction", value: analytics.needs_correction_captains },
     { label: "Rejected captains", value: analytics.rejected_captains },
     { label: "Suspended captains", value: analytics.suspended_captains },
     { label: "Active coupons", value: analytics.active_coupons },

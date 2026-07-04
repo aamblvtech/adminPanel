@@ -12,6 +12,7 @@ function RechargePage() {
   const [form, setForm] = useState({
     captainId: "",
     planType: "daily",
+    customDays: 3,
   });
 
   const captainOptions = captains.map((cap) => ({
@@ -51,8 +52,12 @@ function RechargePage() {
   };
 
   useEffect(() => {
-    loadRecharges();
-    loadCaptains();
+    const timer = window.setTimeout(() => {
+      loadRecharges();
+      loadCaptains();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   const handleFilterChange = (captainId) => {
@@ -72,15 +77,32 @@ function RechargePage() {
       return;
     }
 
+    let targetPlan = form.planType;
+    let days = null;
+
+    if (form.planType.startsWith("trial")) {
+      targetPlan = "trial";
+      if (form.planType === "trial_3") {
+        days = 3;
+      } else if (form.planType === "trial_custom") {
+        days = Number(form.customDays);
+        if (!days || isNaN(days) || days <= 0) {
+          alert("Please enter a valid number of trial days.");
+          return;
+        }
+      }
+    }
+
     try {
       await api.post("/admin/recharges/grant", {
         captainId: form.captainId,
-        planType: form.planType,
+        planType: targetPlan,
+        customDays: days,
       });
 
       setForm((prev) => ({ ...prev, captainId: "" }));
       loadRecharges(filterCaptainId);
-      alert("Recharge granted successfully.");
+      alert(`${targetPlan === 'trial' ? `Free Trial (${days || 3} Days)` : targetPlan + ' pass'} granted successfully.`);
     } catch (error) {
       console.error(error);
       alert(error.response?.data?.message || "Failed to grant recharge.");
@@ -104,6 +126,8 @@ function RechargePage() {
 
   const getPlanBadgeClass = (planType) => {
     switch (planType) {
+      case "trial":
+        return "bg-purple-50 text-purple-700 border-purple-200";
       case "daily":
         return "bg-blue-50 text-blue-700 border-blue-200";
       case "weekly":
@@ -122,7 +146,7 @@ function RechargePage() {
           <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Payments & Recharges</p>
           <h1 className="text-3xl font-semibold text-slate-950">Prepaid Recharges</h1>
           <p className="mt-2 text-sm text-slate-600 max-w-2xl">
-            Grant manual promotional passes to captains, view payment logs, and revoke active plans.
+            Grant manual promotional passes or free trials to captains, view payment logs, and revoke active plans.
           </p>
         </div>
       </div>
@@ -130,9 +154,9 @@ function RechargePage() {
       <div className="grid gap-8 lg:grid-cols-[1.2fr_1fr]">
         {/* GRANT MANUAL RECHARGE */}
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm h-fit">
-          <h2 className="text-xl font-semibold text-slate-900">Grant Manual Pass</h2>
+          <h2 className="text-xl font-semibold text-slate-900">Grant Manual Pass / Free Trial</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Grant a promotional pass to a captain. This starts immediately or stacks after their current plan.
+            Grant a promotional pass or free trial to a captain. This starts immediately or stacks after their current plan.
           </p>
           <form onSubmit={handleGrantRecharge} className="mt-6 space-y-5">
             <div>
@@ -150,23 +174,40 @@ function RechargePage() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-slate-700">Plan Type</label>
+              <label className="text-sm font-medium text-slate-700">Plan / Pass Type</label>
               <select
                 value={form.planType}
                 onChange={(e) => handleChange("planType", e.target.value)}
                 className="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-900"
               >
-                <option value="daily">Daily Pass — ₹32</option>
-                <option value="weekly">Weekly Pass — ₹250</option>
-                <option value="monthly">Monthly Pass — ₹900</option>
+                <option value="daily">Daily Pass — ₹29</option>
+                <option value="weekly">Weekly Pass — ₹169</option>
+                <option value="monthly">Monthly Pass — ₹599</option>
+                <option value="trial_3">🎁 Free Trial — 3 Days (Default)</option>
+                <option value="trial_custom">🎁 Free Trial — Custom Days</option>
               </select>
             </div>
+
+            {form.planType === "trial_custom" && (
+              <div>
+                <label className="text-sm font-medium text-slate-700">Custom Trial Duration (Days)</label>
+                <input
+                  type="number"
+                  min="1"
+                  max="365"
+                  value={form.customDays}
+                  onChange={(e) => handleChange("customDays", e.target.value)}
+                  placeholder="Enter number of days (e.g. 5)"
+                  className="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-900"
+                />
+              </div>
+            )}
 
             <button
               type="submit"
               className="inline-flex rounded-3xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none"
             >
-              Grant Pass
+              Grant Pass / Trial
             </button>
           </form>
         </section>

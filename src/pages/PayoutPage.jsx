@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import api from "../services/api";
 
 function PayoutPage() {
@@ -11,6 +11,7 @@ function PayoutPage() {
   const [loadingTransactions, setLoadingTransactions] = useState(false);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState(""); // "" (all), "pending", "settled"
+  const transactionFiltersRef = useRef({ search: "", statusFilter: "" });
   
   // Pagination
   const [page, setPage] = useState(1);
@@ -32,17 +33,22 @@ function PayoutPage() {
     }
   };
 
-  const fetchTransactions = async (pageNumber = 1) => {
+  useEffect(() => {
+    transactionFiltersRef.current = { search, statusFilter };
+  }, [search, statusFilter]);
+
+  const fetchTransactions = useCallback(async (pageNumber = 1) => {
     try {
       setLoadingTransactions(true);
       const offset = (pageNumber - 1) * limit;
       let url = `/admin/payouts?limit=${limit}&offset=${offset}`;
+      const filters = transactionFiltersRef.current;
       
-      if (statusFilter) {
-        url += `&status=${statusFilter}`;
+      if (filters.statusFilter) {
+        url += `&status=${filters.statusFilter}`;
       }
-      if (search) {
-        url += `&search=${encodeURIComponent(search)}`;
+      if (filters.search) {
+        url += `&search=${encodeURIComponent(filters.search)}`;
       }
 
       const response = await api.get(url);
@@ -57,17 +63,27 @@ function PayoutPage() {
     } finally {
       setLoadingTransactions(false);
     }
-  };
+  }, [limit]);
 
   useEffect(() => {
-    fetchSummary();
+    const timer = window.setTimeout(() => {
+      fetchSummary();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   useEffect(() => {
     if (activeTab === "transactions") {
-      fetchTransactions(1);
+      const timer = window.setTimeout(() => {
+        fetchTransactions(1);
+      }, 0);
+
+      return () => window.clearTimeout(timer);
     }
-  }, [activeTab, statusFilter]);
+
+    return undefined;
+  }, [activeTab, statusFilter, fetchTransactions]);
 
   const handleSearchSubmit = (e) => {
     e.preventDefault();

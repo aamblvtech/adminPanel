@@ -69,9 +69,13 @@ function ReferralPage() {
   };
 
   useEffect(() => {
-    loadReferrals();
-    loadCampaigns();
-    loadUsages();
+    const timer = window.setTimeout(() => {
+      loadReferrals();
+      loadCampaigns();
+      loadUsages();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   const handleRevoke = async (id) => {

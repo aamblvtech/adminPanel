@@ -6,7 +6,7 @@ function CaptainManagementPage() {
   const [captains, setCaptains] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState(""); // "" | "pending" | "approved" | "rejected"
+  const [statusFilter, setStatusFilter] = useState(""); // "" | "pending" | "approved" | "needs_correction" | "rejected"
 
   const getCaptains = async () => {
     try {
@@ -22,21 +22,24 @@ function CaptainManagementPage() {
   };
 
   useEffect(() => {
-    getCaptains();
+    const timer = window.setTimeout(() => {
+      getCaptains();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   const counts = {
     all: captains.length,
-    pending: captains.filter((c) => c.status !== "approved" && c.status !== "rejected").length,
+    pending: captains.filter((c) => c.status === "pending").length,
     approved: captains.filter((c) => c.status === "approved").length,
+    needsCorrection: captains.filter((c) => c.status === "needs_correction").length,
     rejected: captains.filter((c) => c.status === "rejected").length,
   };
 
   const filteredCaptains = captains.filter((c) => {
     // Status filter
-    if (statusFilter === "pending") {
-      if (c.status === "approved" || c.status === "rejected") return false;
-    } else if (statusFilter && c.status !== statusFilter) {
+    if (statusFilter && c.status !== statusFilter) {
       return false;
     }
 
@@ -64,7 +67,7 @@ function CaptainManagementPage() {
           <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Manage</p>
           <h1 className="text-3xl font-semibold text-slate-950">Captain Verification</h1>
           <p className="mt-2 text-sm text-slate-600 max-w-2xl">
-            Review pending captain onboarding requests, approve or reject them, and monitor their current status.
+            Review onboarding requests, request corrections when verified details are wrong, and monitor captain status.
           </p>
         </div>
       </div>
@@ -77,6 +80,7 @@ function CaptainManagementPage() {
             { id: "", label: "All", count: counts.all },
             { id: "pending", label: "Pending", count: counts.pending, color: "text-amber-600 bg-amber-50" },
             { id: "approved", label: "Approved", count: counts.approved, color: "text-emerald-600 bg-emerald-50" },
+            { id: "needs_correction", label: "Needs correction", count: counts.needsCorrection, color: "text-amber-700 bg-amber-50" },
             { id: "rejected", label: "Rejected", count: counts.rejected, color: "text-rose-600 bg-rose-50" },
           ].map((tab) => {
             const isActive = statusFilter === tab.id;

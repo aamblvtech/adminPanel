@@ -29,7 +29,11 @@ function WithdrawalPage() {
   };
 
   useEffect(() => {
-    loadWithdrawals(statusFilter);
+    const timer = window.setTimeout(() => {
+      loadWithdrawals(statusFilter);
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, [statusFilter]);
 
   const handleUpdateStatus = async (id, status, gatewayReference = "", errorMessage = "") => {

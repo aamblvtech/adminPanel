@@ -30,7 +30,11 @@ function CouponPage() {
   };
 
   useEffect(() => {
-    loadCoupons();
+    const timer = window.setTimeout(() => {
+      loadCoupons();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
   }, []);
 
   const handleChange = (field, value) => {
