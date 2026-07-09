@@ -258,6 +258,45 @@ function CaptainCard({ captain, refreshCaptains }) {
               label="RC Number"
               value={captain.rc_number}
             />
+
+            <Info
+              label="Payout Method"
+              value={captain.payout_method ? captain.payout_method.toUpperCase() : "Missing"}
+            />
+
+            {captain.payout_method === "upi" ? (
+              <>
+                <Info
+                  label="UPI ID"
+                  value={captain.upi_id}
+                />
+                {captain.upi_qr_url && (
+                  <div className="rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <p className="mb-2 text-xs font-bold uppercase tracking-wide text-slate-500">UPI QR</p>
+                    <img
+                      src={captain.upi_qr_url}
+                      alt="Captain UPI QR"
+                      className="h-32 w-32 rounded-lg border border-slate-200 bg-white object-contain"
+                    />
+                  </div>
+                )}
+              </>
+            ) : captain.payout_method === "bank" ? (
+              <>
+                <Info
+                  label="Account Holder"
+                  value={captain.account_holder_name}
+                />
+                <Info
+                  label="Account Number"
+                  value={captain.account_number}
+                />
+                <Info
+                  label="IFSC"
+                  value={captain.ifsc}
+                />
+              </>
+            ) : null}
           </div>
 
           {/* IMAGES */}

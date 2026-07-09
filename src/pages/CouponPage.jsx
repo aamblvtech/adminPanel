@@ -1,6 +1,13 @@
 import { useEffect, useState } from "react";
 import api from "../services/api";
 
+const VEHICLE_OPTIONS = [
+  { value: "bike", label: "Bike" },
+  { value: "auto", label: "Auto" },
+  { value: "cab", label: "Cab" },
+  { value: "parcel", label: "Parcel" },
+];
+
 function CouponPage() {
   const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -13,8 +20,13 @@ function CouponPage() {
     startsAt: "",
     expiresAt: "",
     description: "",
+    minFare: "",
+    maxDiscount: "",
     perUserLimit: "1",
     maxUniqueUsers: "",
+    maxDistanceKm: "",
+    isFirstRideOnly: false,
+    applicableVehicles: [],
   });
 
   const loadCoupons = async () => {
@@ -41,6 +53,16 @@ function CouponPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
 
+  const handleVehicleToggle = (vehicle) => {
+    setForm((prev) => {
+      const vehicles = prev.applicableVehicles.includes(vehicle)
+        ? prev.applicableVehicles.filter((item) => item !== vehicle)
+        : [...prev.applicableVehicles, vehicle];
+
+      return { ...prev, applicableVehicles: vehicles };
+    });
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
@@ -58,8 +80,13 @@ function CouponPage() {
         expires_at: form.expiresAt || null,
         usage_limit: null,
         description: form.description.trim() || null,
+        min_fare: form.minFare ? parseFloat(form.minFare) : 0,
+        max_discount: form.maxDiscount ? parseFloat(form.maxDiscount) : null,
         per_user_limit: form.perUserLimit ? parseInt(form.perUserLimit, 10) : 1,
         max_unique_users: form.maxUniqueUsers ? parseInt(form.maxUniqueUsers, 10) : null,
+        max_distance_km: form.maxDistanceKm ? parseFloat(form.maxDistanceKm) : null,
+        applicable_vehicles: form.applicableVehicles.length > 0 ? form.applicableVehicles : null,
+        is_first_ride_only: form.isFirstRideOnly,
       });
 
       setForm({
@@ -69,8 +96,13 @@ function CouponPage() {
         startsAt: "",
         expiresAt: "",
         description: "",
+        minFare: "",
+        maxDiscount: "",
         perUserLimit: "1",
         maxUniqueUsers: "",
+        maxDistanceKm: "",
+        isFirstRideOnly: false,
+        applicableVehicles: [],
       });
       loadCoupons();
       alert("Coupon created successfully.");
@@ -222,6 +254,88 @@ function CouponPage() {
                 className="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-900"
               />
             </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div>
+                <label className="text-sm font-medium text-slate-700">Minimum fare</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={form.minFare}
+                  onChange={(e) => handleChange("minFare", e.target.value)}
+                  placeholder="Optional"
+                  className="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-900"
+                />
+              </div>
+              <div>
+                <label className="text-sm font-medium text-slate-700">Maximum discount</label>
+                <input
+                  type="number"
+                  min="0.01"
+                  step="0.01"
+                  value={form.maxDiscount}
+                  onChange={(e) => handleChange("maxDiscount", e.target.value)}
+                  placeholder="Optional"
+                  className="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-900"
+                />
+                <p className="mt-1 px-1 text-xs text-slate-400">
+                  Applies to percentage coupons as a rupee cap.
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700">Vehicle eligibility</label>
+              <div className="mt-2 grid gap-2 sm:grid-cols-4">
+                {VEHICLE_OPTIONS.map((vehicle) => {
+                  const isSelected = form.applicableVehicles.includes(vehicle.value);
+                  return (
+                    <button
+                      key={vehicle.value}
+                      type="button"
+                      onClick={() => handleVehicleToggle(vehicle.value)}
+                      className={`rounded-3xl border px-4 py-3 text-sm font-semibold transition ${
+                        isSelected
+                          ? "border-slate-950 bg-slate-950 text-white"
+                          : "border-slate-300 bg-slate-50 text-slate-700 hover:border-slate-500"
+                      }`}
+                    >
+                      {vehicle.label}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-1 px-1 text-xs text-slate-400">
+                Leave all unselected to allow this coupon on every vehicle type.
+              </p>
+            </div>
+
+            <div>
+              <label className="text-sm font-medium text-slate-700">Max distance (km)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={form.maxDistanceKm}
+                onChange={(e) => handleChange("maxDistanceKm", e.target.value)}
+                placeholder="Optional, e.g. 10"
+                className="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-900"
+              />
+              <p className="mt-1 px-1 text-xs text-slate-400">
+                Leave blank for no distance limit. Set a value when a coupon should only work within a trip distance.
+              </p>
+            </div>
+
+            <label className="flex items-center gap-3 rounded-3xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm font-medium text-slate-700">
+              <input
+                type="checkbox"
+                checked={form.isFirstRideOnly}
+                onChange={(e) => handleChange("isFirstRideOnly", e.target.checked)}
+                className="h-4 w-4 accent-slate-950"
+              />
+              First completed ride only
+            </label>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <div>
@@ -380,8 +494,17 @@ function CouponPage() {
                 <div className="mt-3 grid gap-2 sm:grid-cols-3 text-sm text-slate-600">
                   <p>Start: {coupon.starts_at ? new Date(coupon.starts_at).toLocaleString() : "Immediate"}</p>
                   <p>Expiry: {coupon.expires_at ? new Date(coupon.expires_at).toLocaleString() : "None"}</p>
+                  <p>Min Fare: {Number(coupon.min_fare || 0) > 0 ? `₹${coupon.min_fare}` : "None"}</p>
+                  <p>Max Discount: {coupon.max_discount ? `₹${coupon.max_discount}` : "None"}</p>
                   <p>Per-User Limit: {coupon.per_user_limit ?? 1}</p>
                   <p>Max Unique Users: {coupon.max_unique_users ?? "Unlimited"} (Used: {coupon.unique_users_count})</p>
+                  <p>Max Distance: {coupon.max_distance_km ? `${coupon.max_distance_km} km` : "Unlimited"}</p>
+                  <p>First Ride Only: {coupon.is_first_ride_only ? "Yes" : "No"}</p>
+                  <p>
+                    Vehicles: {coupon.applicable_vehicles?.length
+                      ? coupon.applicable_vehicles.map((vehicle) => VEHICLE_OPTIONS.find((option) => option.value === vehicle)?.label || vehicle).join(", ")
+                      : "All"}
+                  </p>
                 </div>
               </div>
             ))}

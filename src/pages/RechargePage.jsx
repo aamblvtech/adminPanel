@@ -5,6 +5,7 @@ import SearchableSelect from "../components/SearchableSelect";
 function RechargePage() {
   const [recharges, setRecharges] = useState([]);
   const [captains, setCaptains] = useState([]);
+  const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [captainsLoading, setCaptainsLoading] = useState(true);
   const [filterCaptainId, setFilterCaptainId] = useState("");
@@ -13,7 +14,19 @@ function RechargePage() {
     captainId: "",
     planType: "daily",
     customDays: 3,
+    customRides: 2,
   });
+
+  const fetchPlans = async () => {
+    try {
+      const response = await api.get("/recharge/plans");
+      if (response.data.success) {
+        setPlans(response.data.plans || []);
+      }
+    } catch (error) {
+      console.error("[RechargePage] fetchPlans error:", error);
+    }
+  };
 
   const captainOptions = captains.map((cap) => ({
     value: cap.user_id,
@@ -55,6 +68,7 @@ function RechargePage() {
     const timer = window.setTimeout(() => {
       loadRecharges();
       loadCaptains();
+      fetchPlans();
     }, 0);
 
     return () => window.clearTimeout(timer);
@@ -78,16 +92,16 @@ function RechargePage() {
     }
 
     let targetPlan = form.planType;
-    let days = null;
+    let rides = null;
 
-    if (form.planType.startsWith("trial")) {
+    if (form.planType.startsWith("add_rides")) {
       targetPlan = "trial";
-      if (form.planType === "trial_3") {
-        days = 3;
-      } else if (form.planType === "trial_custom") {
-        days = Number(form.customDays);
-        if (!days || isNaN(days) || days <= 0) {
-          alert("Please enter a valid number of trial days.");
+      if (form.planType === "add_rides_2") {
+        rides = 2;
+      } else if (form.planType === "add_rides_custom") {
+        rides = Number(form.customRides);
+        if (!rides || isNaN(rides) || rides <= 0) {
+          alert("Please enter a valid number of rides.");
           return;
         }
       }
@@ -97,12 +111,12 @@ function RechargePage() {
       await api.post("/admin/recharges/grant", {
         captainId: form.captainId,
         planType: targetPlan,
-        customDays: days,
+        additionalRides: rides,
       });
 
       setForm((prev) => ({ ...prev, captainId: "" }));
       loadRecharges(filterCaptainId);
-      alert(`${targetPlan === 'trial' ? `Free Trial (${days || 3} Days)` : targetPlan + ' pass'} granted successfully.`);
+      alert(`${targetPlan === 'trial' ? `Free Rides Quota (+${rides || 2} Rides)` : targetPlan + ' pass'} granted successfully.`);
     } catch (error) {
       console.error(error);
       alert(error.response?.data?.message || "Failed to grant recharge.");
@@ -154,9 +168,9 @@ function RechargePage() {
       <div className="grid gap-8 lg:grid-cols-[1.2fr_1fr]">
         {/* GRANT MANUAL RECHARGE */}
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm h-fit">
-          <h2 className="text-xl font-semibold text-slate-900">Grant Manual Pass / Free Trial</h2>
+          <h2 className="text-xl font-semibold text-slate-900">Grant Manual Pass / Free Rides Quota</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Grant a promotional pass or free trial to a captain. This starts immediately or stacks after their current plan.
+            Grant a promotional pass or add free completed rides to a captain.
           </p>
           <form onSubmit={handleGrantRecharge} className="mt-6 space-y-5">
             <div>
@@ -180,24 +194,33 @@ function RechargePage() {
                 onChange={(e) => handleChange("planType", e.target.value)}
                 className="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-900"
               >
-                <option value="daily">Daily Pass — ₹29</option>
-                <option value="weekly">Weekly Pass — ₹169</option>
-                <option value="monthly">Monthly Pass — ₹599</option>
-                <option value="trial_3">🎁 Free Trial — 3 Days (Default)</option>
-                <option value="trial_custom">🎁 Free Trial — Custom Days</option>
+                {plans.length === 0 ? (
+                  <option value="" disabled>Loading plans...</option>
+                ) : (
+                  plans.map((p) => {
+                    const capitalized = p.planType.charAt(0).toUpperCase() + p.planType.slice(1);
+                    return (
+                      <option key={p.planType} value={p.planType}>
+                        {capitalized} Pass — ₹{p.price}
+                      </option>
+                    );
+                  })
+                )}
+                <option value="add_rides_2">🎁 Add Free Rides (+2 Completed Rides)</option>
+                <option value="add_rides_custom">🎁 Add Custom Free Rides</option>
               </select>
             </div>
 
-            {form.planType === "trial_custom" && (
+            {form.planType === "add_rides_custom" && (
               <div>
-                <label className="text-sm font-medium text-slate-700">Custom Trial Duration (Days)</label>
+                <label className="text-sm font-medium text-slate-700">Custom Rides Quota (Rides)</label>
                 <input
                   type="number"
                   min="1"
-                  max="365"
-                  value={form.customDays}
-                  onChange={(e) => handleChange("customDays", e.target.value)}
-                  placeholder="Enter number of days (e.g. 5)"
+                  max="100"
+                  value={form.customRides}
+                  onChange={(e) => handleChange("customRides", e.target.value)}
+                  placeholder="Enter number of rides (e.g. 5)"
                   className="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-900"
                 />
               </div>
@@ -207,7 +230,7 @@ function RechargePage() {
               type="submit"
               className="inline-flex rounded-3xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none"
             >
-              Grant Pass / Trial
+              Grant Pass / Free Rides
             </button>
           </form>
         </section>
@@ -218,8 +241,16 @@ function RechargePage() {
           <div className="mt-4 space-y-3 text-sm text-slate-600">
             <p>• <strong>Stacking support</strong>: If a captain has a plan active, granting a new plan will start after the active plan expires.</p>
             <p>• <strong>Revocation</strong>: Revoking a plan immediately changes its expiry to the current time, blocking the driver from going online.</p>
-            <p>• <strong>Pricing model</strong>: Plan amounts are computed server-side including 18% GST (Daily total: ₹37.76, Weekly: ₹295.00, Monthly: ₹1062.00).</p>
+            <p>• <strong>Pricing model</strong>: Plan amounts are computed server-side including 18% GST ({
+              (() => {
+                const daily = plans.find((p) => p.planType === "daily")?.price || 29;
+                const weekly = plans.find((p) => p.planType === "weekly")?.price || 199;
+                const monthly = plans.find((p) => p.planType === "monthly")?.price || 799;
+                return `Daily total: ₹${(daily * 1.18).toFixed(2)}, Weekly: ₹${(weekly * 1.18).toFixed(2)}, Monthly: ₹${(monthly * 1.18).toFixed(2)}`;
+              })()
+            }).</p>
             <p>• <strong>Role constraint</strong>: Only captains with approved profile status can go online, even with active recharges.</p>
+            <p>• <strong>Free Ride Quota</strong>: Newly approved captains automatically get 2 free completed rides baseline. Admins can grant additional free completed rides here.</p>
           </div>
         </section>
       </div>
