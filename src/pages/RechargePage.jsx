@@ -2,10 +2,51 @@ import { useEffect, useState } from "react";
 import api from "../services/api";
 import SearchableSelect from "../components/SearchableSelect";
 
+const PLAN_LABELS = {
+  daily: "Daily",
+  three_days: "3 Days",
+  weekly: "Weekly",
+  monthly: "Monthly",
+  trial: "Trial",
+};
+
+const VEHICLE_PLAN_PRICES = {
+  bike: {
+    daily: { originalPrice: 30, finalPrice: 30, discountLabel: null },
+    three_days: { originalPrice: 90, finalPrice: 72, discountLabel: "Save Rs 18 (20%)" },
+    weekly: { originalPrice: 210, finalPrice: 180, discountLabel: "Save Rs 30 (14%)" },
+    monthly: { originalPrice: 900, finalPrice: 765, discountLabel: "Save Rs 135 (15%)" },
+  },
+  auto: {
+    daily: { originalPrice: 24, finalPrice: 24, discountLabel: null },
+    three_days: { originalPrice: 72, finalPrice: 65, discountLabel: "Save Rs 7 (10%)" },
+    weekly: { originalPrice: 168, finalPrice: 155, discountLabel: "Save Rs 13 (8%)" },
+    monthly: { originalPrice: 720, finalPrice: 650, discountLabel: "Save Rs 70 (10%)" },
+  },
+  cab: {
+    daily: { originalPrice: 48, finalPrice: 48, discountLabel: null },
+    three_days: { originalPrice: 144, finalPrice: 115, discountLabel: "Save Rs 29 (20%)" },
+    weekly: { originalPrice: 336, finalPrice: 285, discountLabel: "Save Rs 51 (15%)" },
+    monthly: { originalPrice: 1440, finalPrice: 1199, discountLabel: "Save Rs 241 (17%)" },
+  },
+};
+
+const PLAN_OPTIONS = ["daily", "three_days", "weekly", "monthly"];
+
+const normalizeSubscriptionVehicleType = (vehicleType) => {
+  const normalized = String(vehicleType || "").trim().toLowerCase();
+  if (normalized === "car" || normalized === "taxi") return "cab";
+  if (normalized === "parcel") return "bike";
+  return normalized;
+};
+
+const formatPlanLabel = (planType) => PLAN_LABELS[planType] || String(planType || "").toUpperCase();
+
+const formatMoney = (value) => `Rs ${Number(value || 0).toFixed(2)}`;
+
 function RechargePage() {
   const [recharges, setRecharges] = useState([]);
   const [captains, setCaptains] = useState([]);
-  const [plans, setPlans] = useState([]);
   const [loading, setLoading] = useState(true);
   const [captainsLoading, setCaptainsLoading] = useState(true);
   const [filterCaptainId, setFilterCaptainId] = useState("");
@@ -16,17 +57,6 @@ function RechargePage() {
     customDays: 3,
     customRides: 2,
   });
-
-  const fetchPlans = async () => {
-    try {
-      const response = await api.get("/recharge/plans");
-      if (response.data.success) {
-        setPlans(response.data.plans || []);
-      }
-    } catch (error) {
-      console.error("[RechargePage] fetchPlans error:", error);
-    }
-  };
 
   const captainOptions = captains.map((cap) => ({
     value: cap.user_id,
@@ -68,7 +98,6 @@ function RechargePage() {
     const timer = window.setTimeout(() => {
       loadRecharges();
       loadCaptains();
-      fetchPlans();
     }, 0);
 
     return () => window.clearTimeout(timer);
@@ -82,6 +111,10 @@ function RechargePage() {
   const handleChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
   };
+
+  const selectedCaptain = captains.find((cap) => cap.user_id === form.captainId);
+  const selectedVehicleType = normalizeSubscriptionVehicleType(selectedCaptain?.vehicle_type);
+  const selectedVehiclePlans = VEHICLE_PLAN_PRICES[selectedVehicleType] || VEHICLE_PLAN_PRICES.bike;
 
   const handleGrantRecharge = async (event) => {
     event.preventDefault();
@@ -116,7 +149,7 @@ function RechargePage() {
 
       setForm((prev) => ({ ...prev, captainId: "" }));
       loadRecharges(filterCaptainId);
-      alert(`${targetPlan === 'trial' ? `Free Rides Quota (+${rides || 2} Rides)` : targetPlan + ' pass'} granted successfully.`);
+      alert(`${targetPlan === "trial" ? `Free Rides Quota (+${rides || 2} Rides)` : `${formatPlanLabel(targetPlan)} pass`} granted successfully.`);
     } catch (error) {
       console.error(error);
       alert(error.response?.data?.message || "Failed to grant recharge.");
@@ -144,6 +177,8 @@ function RechargePage() {
         return "bg-purple-50 text-purple-700 border-purple-200";
       case "daily":
         return "bg-blue-50 text-blue-700 border-blue-200";
+      case "three_days":
+        return "bg-violet-50 text-violet-700 border-violet-200";
       case "weekly":
         return "bg-amber-50 text-amber-700 border-amber-200";
       case "monthly":
@@ -194,21 +229,24 @@ function RechargePage() {
                 onChange={(e) => handleChange("planType", e.target.value)}
                 className="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-900"
               >
-                {plans.length === 0 ? (
-                  <option value="" disabled>Loading plans...</option>
-                ) : (
-                  plans.map((p) => {
-                    const capitalized = p.planType.charAt(0).toUpperCase() + p.planType.slice(1);
-                    return (
-                      <option key={p.planType} value={p.planType}>
-                        {capitalized} Pass — ₹{p.price}
-                      </option>
-                    );
-                  })
-                )}
-                <option value="add_rides_2">🎁 Add Free Rides (+2 Completed Rides)</option>
-                <option value="add_rides_custom">🎁 Add Custom Free Rides</option>
+                {PLAN_OPTIONS.map((planType) => {
+                  const plan = selectedVehiclePlans[planType];
+                  const vehicleLabel = selectedVehicleType ? selectedVehicleType.toUpperCase() : "BIKE";
+                  const discount = plan.discountLabel ? `, ${plan.discountLabel}` : "";
+                  return (
+                    <option key={planType} value={planType}>
+                      {formatPlanLabel(planType)} Pass - {vehicleLabel} - {formatMoney(plan.finalPrice)} incl. GST{discount}
+                    </option>
+                  );
+                })}
+                <option value="add_rides_2">Add Free Rides (+2 Completed Rides)</option>
+                <option value="add_rides_custom">Add Custom Free Rides</option>
               </select>
+              {!selectedCaptain && (
+                <p className="mt-2 text-xs text-amber-700">
+                  Select a captain to preview the exact Bike, Auto, or Cab plan prices. Backend pricing is applied from the captain profile when granting.
+                </p>
+              )}
             </div>
 
             {form.planType === "add_rides_custom" && (
@@ -239,18 +277,12 @@ function RechargePage() {
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
           <h2 className="text-xl font-semibold text-slate-900">Recharge Policies</h2>
           <div className="mt-4 space-y-3 text-sm text-slate-600">
-            <p>• <strong>Stacking support</strong>: If a captain has a plan active, granting a new plan will start after the active plan expires.</p>
-            <p>• <strong>Revocation</strong>: Revoking a plan immediately changes its expiry to the current time, blocking the driver from going online.</p>
-            <p>• <strong>Pricing model</strong>: Plan amounts are computed server-side including 18% GST ({
-              (() => {
-                const daily = plans.find((p) => p.planType === "daily")?.price || 29;
-                const weekly = plans.find((p) => p.planType === "weekly")?.price || 199;
-                const monthly = plans.find((p) => p.planType === "monthly")?.price || 799;
-                return `Daily total: ₹${(daily * 1.18).toFixed(2)}, Weekly: ₹${(weekly * 1.18).toFixed(2)}, Monthly: ₹${(monthly * 1.18).toFixed(2)}`;
-              })()
-            }).</p>
-            <p>• <strong>Role constraint</strong>: Only captains with approved profile status can go online, even with active recharges.</p>
-            <p>• <strong>Free Ride Quota</strong>: Newly approved captains automatically get 2 free completed rides baseline. Admins can grant additional free completed rides here.</p>
+            <p>- <strong>Stacking support</strong>: If a captain has a plan active, granting a new plan will start after the active plan expires.</p>
+            <p>- <strong>Revocation</strong>: Revoking a plan immediately changes its expiry to the current time, blocking the driver from going online.</p>
+            <p>- <strong>Pricing model</strong>: Plan amounts are computed server-side from the captain vehicle type and include 18% GST. Discounts are already reflected in the final payable amount.</p>
+            <p>- <strong>Plan durations</strong>: Daily, 3-day, weekly, and monthly passes are available for Bike, Auto, and Cab captains.</p>
+            <p>- <strong>Role constraint</strong>: Only captains with approved profile status can go online, even with active recharges.</p>
+            <p>- <strong>Free Ride Quota</strong>: Newly approved captains automatically get 2 free completed rides baseline. Admins can grant additional free completed rides here.</p>
           </div>
         </section>
       </div>
@@ -316,12 +348,19 @@ function RechargePage() {
                       </td>
                       <td className="py-4">
                         <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${getPlanBadgeClass(rec.plan_type)}`}>
-                          {rec.plan_type.toUpperCase()}
+                          {formatPlanLabel(rec.plan_type)}
                         </span>
+                        {rec.vehicle_type && (
+                          <div className="mt-1 text-xs text-slate-400">
+                            Purchased as {rec.vehicle_type.toUpperCase()}
+                          </div>
+                        )}
                       </td>
                       <td className="py-4">
-                        <div className="font-semibold text-slate-900">₹{parseFloat(rec.total_amount).toFixed(2)}</div>
-                        <div className="text-xs text-slate-400">Base: ₹{parseFloat(rec.base_amount).toFixed(2)} + GST</div>
+                        <div className="font-semibold text-slate-900">{formatMoney(rec.total_amount)}</div>
+                        <div className="text-xs text-slate-400">
+                          Base: {formatMoney(rec.base_amount)} + GST {formatMoney(rec.gst_amount)}
+                        </div>
                       </td>
                       <td className="py-4 text-xs text-slate-600">
                         <div><span className="text-slate-400">Start:</span> {new Date(rec.starts_at).toLocaleString()}</div>
