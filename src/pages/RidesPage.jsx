@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import api from "../services/api";
 
 const RANGE_OPTIONS = [
@@ -37,6 +37,7 @@ function RidesPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState("");
   const [activeView, setActiveView] = useState("logs");
+  const [availabilityFilter, setAvailabilityFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [loadingSummary, setLoadingSummary] = useState(true);
 
@@ -120,6 +121,17 @@ function RidesPage() {
     activeView === "logs"
       ? "Search rider, captain, phone, vehicle, route..."
       : "Search captain, phone, vehicle...";
+
+  const filteredAvailability = useMemo(() => {
+    if (availabilityFilter === "all") return availability;
+    return availability.filter((captain) => captain.availability_status === availabilityFilter);
+  }, [availability, availabilityFilter]);
+
+  const availabilityTitle = {
+    all: "Online / Offline Captains",
+    online: "Online Captains",
+    offline: "Offline Captains",
+  }[availabilityFilter];
 
   return (
     <div className="min-h-screen min-w-0 overflow-x-hidden bg-slate-100">
@@ -297,21 +309,46 @@ function RidesPage() {
           <section className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
             <div className="mb-4 border-b border-slate-100 pb-4">
               <div className="flex items-center justify-between gap-3">
-                <h2 className="text-lg font-semibold text-slate-950">Online / Offline Captains</h2>
-                <div className="flex gap-2 text-xs font-bold">
-                  <span className="rounded-full bg-emerald-50 px-2 py-1 text-emerald-700">{availabilitySummary?.online_captains ?? 0} online</span>
-                  <span className="rounded-full bg-slate-100 px-2 py-1 text-slate-600">{availabilitySummary?.offline_captains ?? 0} offline</span>
+                <div>
+                  <h2 className="text-lg font-semibold text-slate-950">{availabilityTitle}</h2>
+                  <p className="mt-1 text-sm text-slate-500">
+                    Showing {filteredAvailability.length} captain{filteredAvailability.length === 1 ? "" : "s"}
+                    {search ? ` matching "${search}"` : ""}
+                  </p>
+                </div>
+                <div className="flex flex-wrap justify-end gap-2 text-xs font-bold">
+                  <AvailabilityFilterButton
+                    active={availabilityFilter === "all"}
+                    onClick={() => setAvailabilityFilter("all")}
+                    tone="slate"
+                  >
+                    {availability.length} all
+                  </AvailabilityFilterButton>
+                  <AvailabilityFilterButton
+                    active={availabilityFilter === "online"}
+                    onClick={() => setAvailabilityFilter("online")}
+                    tone="emerald"
+                  >
+                    {availabilitySummary?.online_captains ?? 0} online
+                  </AvailabilityFilterButton>
+                  <AvailabilityFilterButton
+                    active={availabilityFilter === "offline"}
+                    onClick={() => setAvailabilityFilter("offline")}
+                    tone="slate"
+                  >
+                    {availabilitySummary?.offline_captains ?? 0} offline
+                  </AvailabilityFilterButton>
                 </div>
               </div>
             </div>
 
-            {availability.length === 0 ? (
+            {filteredAvailability.length === 0 ? (
               <div className="rounded-2xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
-                No captains found.
+                No {availabilityFilter === "all" ? "" : `${availabilityFilter} `}captains found.
               </div>
             ) : (
               <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
-                {availability.map((captain) => (
+                {filteredAvailability.map((captain) => (
                   <div key={captain.captain_id} className="rounded-2xl border border-slate-200 p-3">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -343,6 +380,27 @@ function RidesPage() {
 
       </div>
     </div>
+  );
+}
+
+function AvailabilityFilterButton({ active, onClick, tone, children }) {
+  const activeClass =
+    tone === "emerald"
+      ? "border-emerald-200 bg-emerald-600 text-white shadow-sm"
+      : "border-slate-300 bg-slate-950 text-white shadow-sm";
+  const inactiveClass =
+    tone === "emerald"
+      ? "border-emerald-100 bg-emerald-50 text-emerald-700 hover:border-emerald-200 hover:bg-emerald-100"
+      : "border-slate-200 bg-slate-100 text-slate-600 hover:border-slate-300 hover:bg-slate-200";
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={`rounded-full border px-3 py-1.5 text-xs font-bold transition ${active ? activeClass : inactiveClass}`}
+    >
+      {children}
+    </button>
   );
 }
 

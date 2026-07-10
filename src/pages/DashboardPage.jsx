@@ -144,7 +144,8 @@ function DashboardPage() {
           </div>
         </header>
 
-        <section className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <section className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          <Metric label="Users" value={analytics.total_riders ?? 0} hint="Customer accounts only; captains excluded" tone="blue" />
           <Metric label="Completed today" value={analytics.completed_rides_today} hint={`${weekRides?.completed_rides ?? 0} completed in last 7 days`} to="/dashboard/rides" />
           <Metric label="Revenue today" value={formatMoney(analytics.gross_revenue_today)} hint={`${formatMoney(weekRides?.gross_revenue)} in last 7 days`} to="/dashboard/rides" />
           <Metric label="Cash collected" value={formatMoney(analytics.cash_collected_today)} hint="Captain-side cash due from rides" tone="emerald" to="/dashboard/rides" />
@@ -195,7 +196,9 @@ function DashboardPage() {
           </Panel>
 
           <Panel title="Growth" subtitle="Users, coupons, and referrals" to="/dashboard/coupons">
-            <StatusRow label="Total users" value={analytics.total_users} tone="blue" />
+            <StatusRow label="All accounts" value={analytics.total_users} tone="blue" />
+            <StatusRow label="Users" value={analytics.total_riders ?? 0} tone="emerald" />
+            <StatusRow label="Captain users" value={analytics.total_driver_users ?? analytics.approved_captains} tone="blue" />
             <StatusRow label="Active coupons" value={`${analytics.active_coupons} / ${analytics.total_coupons}`} tone="amber" to="/dashboard/coupons" />
             <StatusRow label="Active referrals" value={`${analytics.active_referrals} / ${analytics.total_referrals}`} tone="emerald" to="/dashboard/referrals" />
           </Panel>
@@ -250,18 +253,30 @@ function LiveStatusCard({ label, value, tone, to }) {
 function Metric({ label, value, hint, tone = "slate", to }) {
   const toneClass = {
     slate: "text-slate-500",
+    blue: "text-blue-600",
     emerald: "text-emerald-600",
     amber: "text-amber-600",
   }[tone];
 
-  return (
-    <Link to={to} className="min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm transition hover:border-slate-300 hover:bg-slate-50 sm:p-6">
+  const content = (
+    <>
       <div className="flex items-start justify-between gap-3">
         <p className={`break-words text-xs font-semibold uppercase tracking-[0.18em] ${toneClass}`}>{label}</p>
-        <span className="shrink-0 text-xs font-bold text-slate-400">View more</span>
       </div>
       <p className="mt-4 break-words text-3xl font-bold text-slate-950">{value ?? 0}</p>
       <p className="mt-2 text-xs font-medium text-slate-400">{hint}</p>
+    </>
+  );
+
+  const className = "min-w-0 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6";
+
+  if (!to) {
+    return <div className={className}>{content}</div>;
+  }
+
+  return (
+    <Link to={to} className={`${className} transition hover:border-slate-300 hover:bg-slate-50`}>
+      {content}
     </Link>
   );
 }
