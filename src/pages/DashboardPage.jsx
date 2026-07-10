@@ -125,6 +125,7 @@ function DashboardPage() {
   }
 
   const attentionCount = derived.attentionItems.reduce((sum, item) => sum + safeNumber(item.signalCount), 0);
+  const usersCount = analytics.total_riders ?? analytics.total_users ?? 0;
 
   return (
     <div className="min-h-screen min-w-0 bg-slate-100">
@@ -145,7 +146,7 @@ function DashboardPage() {
         </header>
 
         <section className="mb-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-          <Metric label="Users" value={analytics.total_riders ?? 0} hint="Customer accounts only; captains excluded" tone="blue" />
+          <Metric label="Users" value={usersCount} hint="Accounts signed in as users" tone="blue" />
           <Metric label="Completed today" value={analytics.completed_rides_today} hint={`${weekRides?.completed_rides ?? 0} completed in last 7 days`} to="/dashboard/rides" />
           <Metric label="Revenue today" value={formatMoney(analytics.gross_revenue_today)} hint={`${formatMoney(weekRides?.gross_revenue)} in last 7 days`} to="/dashboard/rides" />
           <Metric label="Cash collected" value={formatMoney(analytics.cash_collected_today)} hint="Captain-side cash due from rides" tone="emerald" to="/dashboard/rides" />
@@ -197,7 +198,7 @@ function DashboardPage() {
 
           <Panel title="Growth" subtitle="Users, coupons, and referrals" to="/dashboard/coupons">
             <StatusRow label="All accounts" value={analytics.total_users} tone="blue" />
-            <StatusRow label="Users" value={analytics.total_riders ?? 0} tone="emerald" />
+            <StatusRow label="Users" value={usersCount} tone="emerald" />
             <StatusRow label="Captain users" value={analytics.total_driver_users ?? analytics.approved_captains} tone="blue" />
             <StatusRow label="Active coupons" value={`${analytics.active_coupons} / ${analytics.total_coupons}`} tone="amber" to="/dashboard/coupons" />
             <StatusRow label="Active referrals" value={`${analytics.active_referrals} / ${analytics.total_referrals}`} tone="emerald" to="/dashboard/referrals" />
