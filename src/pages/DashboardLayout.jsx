@@ -6,6 +6,7 @@ const navItems = [
   { label: "Coupons", path: "/dashboard/coupons" },
   { label: "Referral", path: "/dashboard/referrals" },
   { label: "Recharges", path: "/dashboard/recharges" },
+  { label: "Rides", path: "/dashboard/rides" },
   { label: "Captain Subsidy Payouts", path: "/dashboard/payouts" },
   { label: "Withdrawals", path: "/dashboard/withdrawals" },
 ];
@@ -19,9 +20,9 @@ function DashboardLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <div className="flex min-h-screen">
-        <aside className="hidden w-80 flex-col bg-slate-950 px-6 py-8 text-white md:flex">
+    <div className="min-h-screen overflow-x-hidden bg-slate-100">
+      <div className="flex min-h-screen min-w-0">
+        <aside className="hidden w-72 shrink-0 flex-col bg-slate-950 px-6 py-8 text-white lg:flex xl:w-80">
           <div className="mb-10">
             <p className="text-xs uppercase tracking-[0.3em] text-slate-400">Admin Panel</p>
             <h1 className="mt-3 text-3xl font-semibold">Ride App</h1>
@@ -57,20 +58,20 @@ function DashboardLayout() {
           </div>
         </aside>
 
-        <main className="flex-1 p-6 md:p-10">
+        <main className="min-w-0 flex-1 overflow-x-hidden p-4 sm:p-6 lg:p-8 xl:p-10">
           <Outlet />
         </main>
       </div>
 
-      <div className="md:hidden fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white px-4 py-3">
-        <div className="flex items-center justify-between gap-2">
+      <div className="fixed inset-x-0 bottom-0 border-t border-slate-200 bg-white px-4 py-3 lg:hidden">
+        <div className="flex items-center gap-2 overflow-x-auto">
           {navItems.map((item) => (
             <NavLink
               key={item.path}
               to={item.path}
               end={item.path === "/dashboard"}
               className={({ isActive }) =>
-                `flex-1 rounded-3xl px-3 py-2 text-center text-xs font-semibold transition ${
+                `shrink-0 rounded-3xl px-3 py-2 text-center text-xs font-semibold transition ${
                   isActive ? "bg-slate-950 text-white" : "text-slate-500 hover:bg-slate-100"
                 }`
               }
