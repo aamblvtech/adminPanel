@@ -34,6 +34,7 @@ function DashboardPage() {
   }
 
   const stats = [
+    { label: "Total users", value: analytics.total_users },
     { label: "Pending captains", value: analytics.pending_captains },
     { label: "Approved captains", value: analytics.approved_captains },
     { label: "Needs correction", value: analytics.needs_correction_captains },
