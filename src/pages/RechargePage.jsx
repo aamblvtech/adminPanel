@@ -55,7 +55,6 @@ function RechargePage() {
     captainId: "",
     planType: "daily",
     customDays: 3,
-    customRides: 2,
   });
 
   const captainOptions = captains.map((cap) => ({
@@ -124,32 +123,15 @@ function RechargePage() {
       return;
     }
 
-    let targetPlan = form.planType;
-    let rides = null;
-
-    if (form.planType.startsWith("add_rides")) {
-      targetPlan = "trial";
-      if (form.planType === "add_rides_2") {
-        rides = 2;
-      } else if (form.planType === "add_rides_custom") {
-        rides = Number(form.customRides);
-        if (!rides || isNaN(rides) || rides <= 0) {
-          alert("Please enter a valid number of rides.");
-          return;
-        }
-      }
-    }
-
     try {
       await api.post("/admin/recharges/grant", {
         captainId: form.captainId,
-        planType: targetPlan,
-        additionalRides: rides,
+        planType: form.planType,
       });
 
       setForm((prev) => ({ ...prev, captainId: "" }));
       loadRecharges(filterCaptainId);
-      alert(`${targetPlan === "trial" ? `Free Rides Quota (+${rides || 2} Rides)` : `${formatPlanLabel(targetPlan)} pass`} granted successfully.`);
+      alert(`${formatPlanLabel(form.planType)} pass granted successfully.`);
     } catch (error) {
       console.error(error);
       alert(error.response?.data?.message || "Failed to grant recharge.");
@@ -195,7 +177,7 @@ function RechargePage() {
           <p className="text-sm uppercase tracking-[0.3em] text-slate-400">Payments & Recharges</p>
           <h1 className="text-3xl font-semibold text-slate-950">Prepaid Recharges</h1>
           <p className="mt-2 text-sm text-slate-600 max-w-2xl">
-            Grant manual promotional passes or free trials to captains, view payment logs, and revoke active plans.
+            Grant manual promotional passes to captains, view payment logs, and revoke active plans.
           </p>
         </div>
       </div>
@@ -203,9 +185,9 @@ function RechargePage() {
       <div className="grid gap-8 lg:grid-cols-[1.2fr_1fr]">
         {/* GRANT MANUAL RECHARGE */}
         <section className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm h-fit">
-          <h2 className="text-xl font-semibold text-slate-900">Grant Manual Pass / Free Rides Quota</h2>
+          <h2 className="text-xl font-semibold text-slate-900">Grant Manual Pass</h2>
           <p className="mt-1 text-sm text-slate-500">
-            Grant a promotional pass or add free completed rides to a captain.
+            Grant a promotional pass to a captain.
           </p>
           <form onSubmit={handleGrantRecharge} className="mt-6 space-y-5">
             <div>
@@ -239,8 +221,6 @@ function RechargePage() {
                     </option>
                   );
                 })}
-                <option value="add_rides_2">Add Free Rides (+2 Completed Rides)</option>
-                <option value="add_rides_custom">Add Custom Free Rides</option>
               </select>
               {!selectedCaptain && (
                 <p className="mt-2 text-xs text-amber-700">
@@ -249,26 +229,11 @@ function RechargePage() {
               )}
             </div>
 
-            {form.planType === "add_rides_custom" && (
-              <div>
-                <label className="text-sm font-medium text-slate-700">Custom Rides Quota (Rides)</label>
-                <input
-                  type="number"
-                  min="1"
-                  max="100"
-                  value={form.customRides}
-                  onChange={(e) => handleChange("customRides", e.target.value)}
-                  placeholder="Enter number of rides (e.g. 5)"
-                  className="mt-2 w-full rounded-3xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm text-slate-900 outline-none focus:border-slate-900"
-                />
-              </div>
-            )}
-
             <button
               type="submit"
               className="inline-flex rounded-3xl bg-slate-950 px-6 py-3 text-sm font-semibold text-white transition hover:bg-slate-800 focus:outline-none"
             >
-              Grant Pass / Free Rides
+              Grant Pass
             </button>
           </form>
         </section>
@@ -282,7 +247,6 @@ function RechargePage() {
             <p>- <strong>Pricing model</strong>: Plan amounts are computed server-side from the captain vehicle type and include 18% GST. Discounts are already reflected in the final payable amount.</p>
             <p>- <strong>Plan durations</strong>: Daily, 3-day, weekly, and monthly passes are available for Bike, Auto, and Cab captains.</p>
             <p>- <strong>Role constraint</strong>: Only captains with approved profile status can go online, even with active recharges.</p>
-            <p>- <strong>Free Ride Quota</strong>: Newly approved captains automatically get 2 free completed rides baseline. Admins can grant additional free completed rides here.</p>
           </div>
         </section>
       </div>
