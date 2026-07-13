@@ -9,6 +9,7 @@ const navItems = [
   { label: "Rides", path: "/dashboard/rides" },
   { label: "Captain Subsidy Payouts", path: "/dashboard/payouts" },
   { label: "Withdrawals", path: "/dashboard/withdrawals" },
+  { label: "Broadcast Notifications", path: "/dashboard/notifications" },
 ];
 
 function DashboardLayout() {

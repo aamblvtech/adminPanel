@@ -9,6 +9,7 @@ import RechargePage from "./pages/RechargePage";
 import PayoutPage from "./pages/PayoutPage";
 import WithdrawalPage from "./pages/WithdrawalPage";
 import RidesPage from "./pages/RidesPage";
+import BroadcastNotificationPage from "./pages/BroadcastNotificationPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 function App() {
@@ -32,6 +33,7 @@ function App() {
           <Route path="rides" element={<RidesPage />} />
           <Route path="payouts" element={<PayoutPage />} />
           <Route path="withdrawals" element={<WithdrawalPage />} />
+          <Route path="notifications" element={<BroadcastNotificationPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
