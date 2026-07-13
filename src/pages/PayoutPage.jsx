@@ -51,6 +51,7 @@ function PayoutPage() {
   const [paymentReference, setPaymentReference] = useState("");
   const [adminNote, setAdminNote] = useState("");
   const [settling, setSettling] = useState(false);
+  const [notifying, setNotifying] = useState({});
   const transactionFiltersRef = useRef({ search: "", statusFilter: "" });
   const limit = 15;
 
@@ -161,6 +162,21 @@ function PayoutPage() {
     }
   };
 
+  const notifyCaptain = async (captainId) => {
+    try {
+      setNotifying((prev) => ({ ...prev, [captainId]: true }));
+      const response = await api.post("/admin/payouts/notify-missing-details", { captainId });
+      if (response.data.success) {
+        alert("Notification sent to captain successfully.");
+      }
+    } catch (error) {
+      console.error("[PayoutPage] notifyCaptain error:", error);
+      alert(error.response?.data?.message || "Failed to notify captain.");
+    } finally {
+      setNotifying((prev) => ({ ...prev, [captainId]: false }));
+    }
+  };
+
   const totalPages = Math.ceil(totalPayoutsCount / limit);
 
   return (
@@ -175,7 +191,7 @@ function PayoutPage() {
         </div>
 
         <div className="mb-8 grid gap-6 sm:grid-cols-3">
-          <Metric label="Pending Payables" value={loadingSummary ? "..." : formatMoney(summary.total_pending)} hint="Includes blocked payouts missing details" tone="amber" />
+          <Metric label="Pending Payables" value={loadingSummary ? "..." : formatMoney(summary.total_pending)} hint="Includes pending payouts missing details" tone="amber" />
           <Metric label="Paid" value={loadingSummary ? "..." : formatMoney(summary.total_settled)} hint="Manual transfers recorded with reference" tone="emerald" />
           <Metric label="Overdue" value={loadingSummary ? "..." : formatMoney(summary.total_overdue)} hint="Past the 7-day payout promise" tone="red" />
         </div>
@@ -222,13 +238,23 @@ function PayoutPage() {
                         <td className="py-4 font-medium text-slate-600">{cap.pending_count}</td>
                         <td className="py-4 font-bold text-amber-600">{formatMoney(cap.pending_balance)}</td>
                         <td className="py-4 text-right">
-                          <button
-                            onClick={() => openBulkSettle(cap)}
-                            disabled={!cap.payout_details_valid}
-                            className="rounded-xl bg-slate-950 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800 disabled:cursor-not-allowed disabled:bg-slate-300"
-                          >
-                            Mark Paid
-                          </button>
+                          <div className="flex items-center justify-end gap-2">
+                            {!cap.payout_details_valid && (
+                              <button
+                                onClick={() => notifyCaptain(cap.captain_id)}
+                                disabled={notifying[cap.captain_id]}
+                                className="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                              >
+                                {notifying[cap.captain_id] ? "Notifying..." : "Notify Captain"}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => openBulkSettle(cap)}
+                              className="rounded-xl bg-slate-950 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800"
+                            >
+                              Mark Paid
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -251,7 +277,6 @@ function PayoutPage() {
                 <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-2 text-sm outline-none focus:border-slate-900">
                   <option value="">All Statuses</option>
                   <option value="pending">Pending</option>
-                  <option value="blocked">Blocked</option>
                   <option value="paid">Paid</option>
                 </select>
                 <button type="submit" className="rounded-xl bg-slate-950 px-4 py-2 text-xs font-semibold text-white">Apply</button>
@@ -265,8 +290,8 @@ function PayoutPage() {
             ) : (
               <div className="space-y-4">
                 {payouts.map((p) => {
-                  const isOverdue = ["pending", "blocked"].includes(p.status) && new Date() > new Date(p.settle_by);
-                  const statusLabel = p.status === "paid" ? "Paid" : p.status === "blocked" ? "Blocked" : isOverdue ? "Overdue" : "Pending";
+                  const isOverdue = p.status === "pending" && new Date() > new Date(p.settle_by);
+                  const statusLabel = p.status === "paid" ? "Paid" : isOverdue ? "Overdue" : "Pending";
                   return (
                     <div key={p.id} className="rounded-2xl border border-slate-200 p-4">
                       <div className="grid gap-4 lg:grid-cols-[1.2fr_1fr_1fr_0.7fr]">
@@ -288,7 +313,7 @@ function PayoutPage() {
                           <p className="mt-2 text-sm font-bold text-amber-600">Pay: {formatMoney(p.subsidy_rupees)}</p>
                         </div>
                         <div className="flex flex-col items-start justify-between gap-3 lg:items-end">
-                          <span className={`rounded-full px-3 py-1 text-xs font-bold ${p.status === "paid" ? "bg-emerald-100 text-emerald-700" : p.status === "blocked" ? "bg-red-100 text-red-700" : isOverdue ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
+                          <span className={`rounded-full px-3 py-1 text-xs font-bold ${p.status === "paid" ? "bg-emerald-100 text-emerald-700" : isOverdue ? "bg-red-100 text-red-700" : "bg-amber-100 text-amber-700"}`}>
                             {statusLabel}
                           </span>
                           <div className="text-xs text-slate-500 lg:text-right">
@@ -297,9 +322,20 @@ function PayoutPage() {
                             {p.payment_reference && <p className="mt-1 font-mono">Ref: {p.payment_reference}</p>}
                           </div>
                           {p.status !== "paid" && (
-                            <button onClick={() => openSingleSettle(p)} disabled={!p.payout_details_valid} className="rounded-xl bg-slate-950 px-4 py-2 text-xs font-semibold text-white disabled:cursor-not-allowed disabled:bg-slate-300">
-                              Mark Paid
-                            </button>
+                            <div className="flex items-center gap-2">
+                              {!p.payout_details_valid && (
+                                <button
+                                  onClick={() => notifyCaptain(p.captain_id)}
+                                  disabled={notifying[p.captain_id]}
+                                  className="rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-2 text-xs font-semibold text-indigo-700 hover:bg-indigo-100 disabled:opacity-50"
+                                >
+                                  {notifying[p.captain_id] ? "Notifying..." : "Notify Captain"}
+                                </button>
+                              )}
+                              <button onClick={() => openSingleSettle(p)} className="rounded-xl bg-slate-950 px-4 py-2 text-xs font-semibold text-white transition hover:bg-slate-800">
+                                Mark Paid
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>

@@ -51,6 +51,45 @@ function RechargePage() {
   const [captainsLoading, setCaptainsLoading] = useState(true);
   const [filterCaptainId, setFilterCaptainId] = useState("");
   
+  const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
+  const [limit, setLimit] = useState(10);
+  const [hasMore, setHasMore] = useState(false);
+  const [hasExactTotal, setHasExactTotal] = useState(false);
+
+  const getPageNumbers = () => {
+    const totalPages = Math.ceil(total / limit);
+    const pageNumbers = [];
+    
+    // Always show at most 5 page numbers around the current page
+    let startPage = Math.max(1, page - 2);
+    let endPage = Math.min(totalPages, page + 2);
+    
+    if (page <= 3) {
+      endPage = Math.min(totalPages, 5);
+    }
+    if (page > totalPages - 3) {
+      startPage = Math.max(1, totalPages - 4);
+    }
+
+    for (let i = startPage; i <= endPage; i++) {
+      pageNumbers.push(i);
+    }
+    return { pageNumbers, totalPages };
+  };
+
+  const getPageSizeOptions = () => {
+    const defaultOptions = [10, 15, 20, 50];
+    const filtered = [];
+    for (const opt of defaultOptions) {
+      filtered.push(opt);
+      if (opt >= total) {
+        break;
+      }
+    }
+    return filtered.length > 0 ? filtered : [10];
+  };
+
   const [form, setForm] = useState({
     captainId: "",
     planType: "daily",
@@ -64,14 +103,28 @@ function RechargePage() {
     searchTerms: `${cap.full_name} ${cap.phone || ""} ${cap.vehicle_number} ${cap.vehicle_type}`.toLowerCase(),
   }));
 
-  const loadRecharges = async (captainId = "") => {
+  const loadRecharges = async (captainId = filterCaptainId, pageNum = page, customLimit = limit) => {
     try {
       setLoading(true);
-      const url = captainId 
-        ? `/admin/recharges?captainId=${captainId}` 
-        : "/admin/recharges";
+      const offset = (pageNum - 1) * customLimit;
+      let url = `/admin/recharges?limit=${customLimit}&offset=${offset}`;
+      if (captainId) {
+        url += `&captainId=${captainId}`;
+      }
       const response = await api.get(url);
-      setRecharges(response.data.recharges || []);
+      const resRecharges = response.data.recharges || [];
+      setRecharges(resRecharges);
+      
+      if (response.data.total !== undefined) {
+        setTotal(response.data.total);
+        setHasExactTotal(true);
+        setHasMore(response.data.total > pageNum * customLimit);
+      } else {
+        const more = resRecharges.length === customLimit;
+        setHasMore(more);
+        setHasExactTotal(false);
+        setTotal(more ? pageNum * customLimit + 1 : (pageNum - 1) * customLimit + resRecharges.length);
+      }
     } catch (error) {
       console.error(error);
       alert("Failed to load recharges");
@@ -104,7 +157,8 @@ function RechargePage() {
 
   const handleFilterChange = (captainId) => {
     setFilterCaptainId(captainId);
-    loadRecharges(captainId);
+    setPage(1);
+    loadRecharges(captainId, 1);
   };
 
   const handleChange = (field, value) => {
@@ -130,7 +184,7 @@ function RechargePage() {
       });
 
       setForm((prev) => ({ ...prev, captainId: "" }));
-      loadRecharges(filterCaptainId);
+      loadRecharges(filterCaptainId, page);
       alert(`${formatPlanLabel(form.planType)} pass granted successfully.`);
     } catch (error) {
       console.error(error);
@@ -145,7 +199,7 @@ function RechargePage() {
 
     try {
       await api.patch(`/admin/recharges/${rechargeId}/revoke`);
-      loadRecharges(filterCaptainId);
+      loadRecharges(filterCaptainId, page);
       alert("Recharge revoked successfully.");
     } catch (error) {
       console.error(error);
@@ -283,79 +337,164 @@ function RechargePage() {
             No recharge records found.
           </div>
         ) : (
-          <div className="mt-6 overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-slate-200 text-slate-400 text-xs uppercase tracking-wider">
-                  <th className="pb-3 font-semibold">Captain</th>
-                  <th className="pb-3 font-semibold">Plan</th>
-                  <th className="pb-3 font-semibold">Pricing (Total)</th>
-                  <th className="pb-3 font-semibold">Validity Dates</th>
-                  <th className="pb-3 font-semibold">Source</th>
-                  <th className="pb-3 font-semibold">Status</th>
-                  <th className="pb-3 font-semibold text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-sm text-slate-800">
-                {recharges.map((rec) => {
-                  const isCurrentlyActive = rec.status === "active" && new Date(rec.expires_at) > new Date();
-                  
-                  return (
-                    <tr key={rec.id} className="hover:bg-slate-50/50 transition-colors">
-                      <td className="py-4">
-                        <div className="font-semibold text-slate-950">
-                          {rec.captain_name || "Unknown Captain"}
-                        </div>
-                        <div className="text-xs text-slate-400 mt-0.5">
-                          {rec.captain_phone} {rec.captain_vehicle_number && `(${rec.captain_vehicle_type} - ${rec.captain_vehicle_number})`}
-                        </div>
-                      </td>
-                      <td className="py-4">
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${getPlanBadgeClass(rec.plan_type)}`}>
-                          {formatPlanLabel(rec.plan_type)}
-                        </span>
-                        {rec.vehicle_type && (
-                          <div className="mt-1 text-xs text-slate-400">
-                            Purchased as {rec.vehicle_type.toUpperCase()}
+          <>
+            <div className="mt-6 overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-200 text-slate-400 text-xs uppercase tracking-wider">
+                    <th className="pb-3 font-semibold">Captain</th>
+                    <th className="pb-3 font-semibold">Plan</th>
+                    <th className="pb-3 font-semibold">Pricing (Total)</th>
+                    <th className="pb-3 font-semibold">Validity Dates</th>
+                    <th className="pb-3 font-semibold">Source</th>
+                    <th className="pb-3 font-semibold">Status</th>
+                    <th className="pb-3 font-semibold text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-100 text-sm text-slate-800">
+                  {recharges.map((rec) => {
+                    const isCurrentlyActive = rec.status === "active" && new Date(rec.expires_at) > new Date();
+                    
+                    return (
+                      <tr key={rec.id} className="hover:bg-slate-50/50 transition-colors">
+                        <td className="py-4">
+                          <div className="font-semibold text-slate-950">
+                            {rec.captain_name || "Unknown Captain"}
                           </div>
-                        )}
-                      </td>
-                      <td className="py-4">
-                        <div className="font-semibold text-slate-900">{formatMoney(rec.total_amount)}</div>
-                        <div className="text-xs text-slate-400">
-                          Base: {formatMoney(rec.base_amount)} + GST {formatMoney(rec.gst_amount)}
-                        </div>
-                      </td>
-                      <td className="py-4 text-xs text-slate-600">
-                        <div><span className="text-slate-400">Start:</span> {new Date(rec.starts_at).toLocaleString()}</div>
-                        <div className="mt-1"><span className="text-slate-400">End:</span> {new Date(rec.expires_at).toLocaleString()}</div>
-                      </td>
-                      <td className="py-4">
-                        <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${rec.created_by === "admin" ? "bg-amber-100 text-amber-800" : "bg-purple-100 text-purple-800"}`}>
-                          {rec.created_by.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="py-4">
-                        <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${isCurrentlyActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"}`}>
-                          {isCurrentlyActive ? "Active" : rec.status === "active" ? "Expired" : rec.status.toUpperCase()}
-                        </span>
-                      </td>
-                      <td className="py-4 text-right">
-                        {isCurrentlyActive && (
-                          <button
-                            onClick={() => handleRevokeRecharge(rec.id)}
-                            className="inline-flex items-center justify-center rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-100 transition"
-                          >
-                            Revoke
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                          <div className="text-xs text-slate-400 mt-0.5">
+                            {rec.captain_phone} {rec.captain_vehicle_number && `(${rec.captain_vehicle_type} - ${rec.captain_vehicle_number})`}
+                          </div>
+                        </td>
+                        <td className="py-4">
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${getPlanBadgeClass(rec.plan_type)}`}>
+                            {formatPlanLabel(rec.plan_type)}
+                          </span>
+                          {rec.vehicle_type && (
+                            <div className="mt-1 text-xs text-slate-400">
+                              Purchased as {rec.vehicle_type.toUpperCase()}
+                            </div>
+                          )}
+                        </td>
+                        <td className="py-4">
+                          <div className="font-semibold text-slate-900">{formatMoney(rec.total_amount)}</div>
+                          <div className="text-xs text-slate-400">
+                            Base: {formatMoney(rec.base_amount)} + GST {formatMoney(rec.gst_amount)}
+                          </div>
+                        </td>
+                        <td className="py-4 text-xs text-slate-600">
+                          <div><span className="text-slate-400">Start:</span> {new Date(rec.starts_at).toLocaleString()}</div>
+                          <div className="mt-1"><span className="text-slate-400">End:</span> {new Date(rec.expires_at).toLocaleString()}</div>
+                        </td>
+                        <td className="py-4">
+                          <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${rec.created_by === "admin" ? "bg-amber-100 text-amber-800" : "bg-purple-100 text-purple-800"}`}>
+                            {rec.created_by.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="py-4">
+                          <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${isCurrentlyActive ? "bg-emerald-100 text-emerald-700" : "bg-slate-200 text-slate-600"}`}>
+                            {isCurrentlyActive ? "Active" : rec.status === "active" ? "Expired" : rec.status.toUpperCase()}
+                          </span>
+                        </td>
+                        <td className="py-4 text-right">
+                          {isCurrentlyActive && (
+                            <button
+                              onClick={() => handleRevokeRecharge(rec.id)}
+                              className="inline-flex items-center justify-center rounded-full bg-red-50 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-100 transition"
+                            >
+                              Revoke
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+
+            {recharges.length > 0 && (
+              <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-t border-slate-100 pt-4 text-sm text-slate-600">
+                <div>
+                  Showing <span className="font-semibold text-slate-900">{(page - 1) * limit + 1}</span> to{" "}
+                  <span className="font-semibold text-slate-900">{(page - 1) * limit + recharges.length}</span>{" "}
+                  {hasExactTotal ? (
+                    <>
+                      of <span className="font-semibold text-slate-900">{total}</span> records
+                    </>
+                  ) : (
+                    <>records</>
+                  )}
+                </div>
+                
+                <div className="flex flex-wrap items-center gap-4">
+                  {/* Page Size Selector */}
+                  <div className="flex items-center gap-1 text-xs text-slate-500">
+                    <span>Show</span>
+                    <select
+                      value={limit}
+                      onChange={(e) => {
+                        const newLimit = parseInt(e.target.value, 10);
+                        setLimit(newLimit);
+                        setPage(1);
+                        loadRecharges(filterCaptainId, 1, newLimit);
+                      }}
+                      className="rounded-3xl border border-slate-200 px-3 py-1.5 bg-slate-50 text-slate-800 outline-none focus:border-slate-400 font-semibold cursor-pointer"
+                    >
+                      {getPageSizeOptions().map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt} per page
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      onClick={() => {
+                        const prev = Math.max(1, page - 1);
+                        setPage(prev);
+                        loadRecharges(filterCaptainId, prev);
+                      }}
+                      disabled={page === 1}
+                      className="rounded-3xl border border-slate-200 px-3.5 py-1.5 font-medium hover:bg-slate-50 transition disabled:opacity-50 disabled:hover:bg-white mr-1"
+                    >
+                      Previous
+                    </button>
+                    
+                    {hasExactTotal && getPageNumbers().pageNumbers.map((pageNum) => (
+                      <button
+                        key={pageNum}
+                        onClick={() => {
+                          setPage(pageNum);
+                          loadRecharges(filterCaptainId, pageNum);
+                        }}
+                        className={`h-8 w-8 flex items-center justify-center rounded-full border text-xs font-semibold transition ${
+                          page === pageNum
+                            ? "bg-slate-950 text-white border-slate-950"
+                            : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ))}
+
+                    <button
+                      onClick={() => {
+                        const totalPages = Math.ceil(total / limit);
+                        const next = Math.min(totalPages, page + 1);
+                        setPage(next);
+                        loadRecharges(filterCaptainId, next);
+                      }}
+                      disabled={!hasMore}
+                      className="rounded-3xl border border-slate-200 px-3.5 py-1.5 font-medium hover:bg-slate-50 transition disabled:opacity-50 disabled:hover:bg-white ml-1"
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </section>
     </div>
