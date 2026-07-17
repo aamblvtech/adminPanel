@@ -10,6 +10,7 @@ import PayoutPage from "./pages/PayoutPage";
 import WithdrawalPage from "./pages/WithdrawalPage";
 import RidesPage from "./pages/RidesPage";
 import BroadcastNotificationPage from "./pages/BroadcastNotificationPage";
+import AdsPage from "./pages/AdsPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
 function App() {
@@ -34,6 +35,7 @@ function App() {
           <Route path="payouts" element={<PayoutPage />} />
           <Route path="withdrawals" element={<WithdrawalPage />} />
           <Route path="notifications" element={<BroadcastNotificationPage />} />
+          <Route path="ads" element={<AdsPage />} />
         </Route>
       </Routes>
     </BrowserRouter>

@@ -5,6 +5,7 @@ const navItems = [
   { label: "Manage Captains", path: "/dashboard/captains" },
   { label: "Coupons", path: "/dashboard/coupons" },
   { label: "Referral", path: "/dashboard/referrals" },
+  { label: "Local Ads", path: "/dashboard/ads" },
   { label: "Recharges", path: "/dashboard/recharges" },
   { label: "Rides", path: "/dashboard/rides" },
   { label: "Captain Subsidy Payouts", path: "/dashboard/payouts" },

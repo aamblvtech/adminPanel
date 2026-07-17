@@ -17,6 +17,7 @@ function BroadcastNotificationPage() {
   const [errorMessage, setErrorMessage] = useState("");
   const [showConfirm, setShowConfirm] = useState(false);
   const [sentCount, setSentCount] = useState(0);
+  const [sendSummary, setSendSummary] = useState(null);
 
   const screenOptions = {
     driver: [
@@ -36,6 +37,19 @@ function BroadcastNotificationPage() {
     ],
   };
 
+  const targetGroupOptions = {
+    driver: [
+      { value: "all", label: "All Approved Captains" },
+      { value: "online", label: "Online Captains" },
+      { value: "offline", label: "Offline Captains" },
+      { value: "specific", label: "Specific Captain IDs" },
+    ],
+    rider: [
+      { value: "all", label: "All Rider App Users" },
+      { value: "specific", label: "Specific Rider IDs" },
+    ],
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setForm((prev) => {
@@ -43,6 +57,8 @@ function BroadcastNotificationPage() {
       // Fallback screen if audience changes
       if (name === "audienceRole") {
         updated.screen = "Home";
+        updated.targetGroup = "all";
+        updated.specificUserIds = "";
       }
       return updated;
     });
@@ -64,6 +80,7 @@ function BroadcastNotificationPage() {
     setLoading(true);
     setErrorMessage("");
     setSuccessMessage("");
+    setSendSummary(null);
 
     try {
       const payload = {
@@ -90,6 +107,15 @@ function BroadcastNotificationPage() {
       if (response.data.success) {
         setSuccessMessage(response.data.message);
         setSentCount(response.data.sentCount || 0);
+        setSendSummary({
+          droppedCount: response.data.droppedCount || 0,
+          inboxInsertedCount: response.data.inboxInsertedCount || 0,
+          pushAttemptedCount: response.data.pushAttemptedCount || 0,
+          pushSuccessCount: response.data.pushSuccessCount || 0,
+          pushFailureCount: response.data.pushFailureCount || 0,
+          pushSkipped: !!response.data.pushSkipped,
+          pushError: response.data.pushError || "",
+        });
         // Clear form content
         setForm((prev) => ({
           ...prev,
@@ -101,7 +127,7 @@ function BroadcastNotificationPage() {
       }
     } catch (error) {
       console.error(error);
-      setErrorMessage(error.message || "Failed to send notifications. Try again.");
+      setErrorMessage(error.response?.data?.message || error.message || "Failed to send notifications. Try again.");
     } finally {
       setLoading(false);
     }
@@ -127,6 +153,29 @@ function BroadcastNotificationPage() {
             {successMessage && (
               <div className="mb-6 rounded-2xl bg-emerald-50 border border-emerald-200 p-4 text-sm text-emerald-800">
                 <span className="font-semibold">Success!</span> {successMessage} ({sentCount} users targeted)
+                {sendSummary && (
+                  <div className="mt-3 grid gap-2 text-xs text-emerald-900 sm:grid-cols-2">
+                    <div>Inbox rows: <span className="font-semibold">{sendSummary.inboxInsertedCount}</span></div>
+                    <div>Push tokens: <span className="font-semibold">{sendSummary.pushAttemptedCount}</span></div>
+                    <div>Push success: <span className="font-semibold">{sendSummary.pushSuccessCount}</span></div>
+                    <div>Push failed: <span className="font-semibold">{sendSummary.pushFailureCount}</span></div>
+                    {sendSummary.droppedCount > 0 && (
+                      <div className="sm:col-span-2 text-amber-700">
+                        Dropped audience mismatches: <span className="font-semibold">{sendSummary.droppedCount}</span>
+                      </div>
+                    )}
+                    {sendSummary.pushSkipped && (
+                      <div className="sm:col-span-2 text-amber-700">
+                        Push skipped. Check Firebase configuration on the backend.
+                      </div>
+                    )}
+                    {sendSummary.pushError && (
+                      <div className="sm:col-span-2 text-amber-700">
+                        Push error: <span className="font-semibold">{sendSummary.pushError}</span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             )}
 
@@ -160,18 +209,26 @@ function BroadcastNotificationPage() {
                     onChange={handleInputChange}
                     className="w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm focus:border-slate-400 focus:bg-white focus:outline-none transition-all"
                   >
-                    <option value="all">All Registered</option>
-                    <option value="online">Online Now (Connected)</option>
-                    <option value="offline">Offline Only</option>
-                    <option value="specific">Specific User IDs</option>
+                    {targetGroupOptions[form.audienceRole].map((opt) => (
+                      <option key={opt.value} value={opt.value}>
+                        {opt.label}
+                      </option>
+                    ))}
                   </select>
+                  {form.audienceRole === "rider" && (
+                    <p className="mt-2 text-xs leading-relaxed text-slate-500">
+                      Rider online status is not used for broadcasts. Target all rider app users or paste specific rider IDs.
+                    </p>
+                  )}
                 </div>
               </div>
 
               {/* Specific IDs */}
               {form.targetGroup === "specific" && (
                 <div>
-                  <label className="block text-sm font-semibold text-slate-700 mb-2">Target User IDs (Comma-separated)</label>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">
+                    {form.audienceRole === "driver" ? "Target Captain IDs" : "Target Rider IDs"} (Comma-separated)
+                  </label>
                   <textarea
                     name="specificUserIds"
                     value={form.specificUserIds}
